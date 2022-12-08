@@ -1,5 +1,6 @@
 import cv2
 import os
+import numpy as np
 
 #controlla se un punto è all'interno di un poligono
 def ray_tracing_method(x, y, poly):
@@ -19,15 +20,15 @@ def ray_tracing_method(x, y, poly):
 	return inside
 				
 #controlla se un punto di un oggetto sta per attraversare una linea
-def is_crossing_line(x, y, line, tresh):
-	tresh_down = 1 - tresh
-	tresh_up = 1 + tres
+def is_crossing_line(x, y, line, thresh):
+	thresh_down = 1 - thresh
+	thresh_up = 1 + thres
 	x1, y1 = line[0]
 	x2, y2 = line[1]
-	x3, y3 = x1, y1*tresh_down
-	x4, y4 = x2, y2*tresh_down
-	x5, y5 = x2, y2*tresh_up
-	x6, y6 = x1, y1*tresh_up
+	x3, y3 = x1, y1*thresh_down
+	x4, y4 = x2, y2*thresh_down
+	x5, y5 = x2, y2*thresh_up
+	x6, y6 = x1, y1*thresh_up
 	polygon = [(x3, y3), (x4, y4), (x5, y5), (x6, y6)]
 	res = rey_tracing_method(x, y, polygon)
 	return res
@@ -40,7 +41,20 @@ def crossing_color(color, is_crossing):
 	else:
 		return color
 		
-
+#funzione che crea i detection box con un pallino al centro
+def detectionBox(boxes, frame, IDs, confidence, i, LABELS):
+	if len(i) > 0:
+		for j in i.flatten():
+			#estrae le coordinate del rettangolo
+			(x, y) = (boxes[j][0], boxes[j][1])
+			(w, h) = (boxes[j][2], boxes[j][3])
+			#rettangolo con il testo sopra: nome classe, confidence
+			color = [int(c) for c in COLORS[IDs[j]]]
+			cv2.rectangle(frame, (x,y), (x+w, y+h), color, 2)
+			text = "{}: {:.4f}".format(LABELS[IDs[j]], confidence[i])
+			cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+			#pallino al centro
+			cv2.circle(frame, (frame, (x + (w//2), y + (h//2), 2, (0, 255, 0), thickness = 3)
 	
 	
 	
