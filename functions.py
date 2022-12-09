@@ -14,7 +14,7 @@ def ray_tracing_method(x, y, poly):
 				if x <= max(p1x, p2x):
 					if p1y != p2y:
 						xints = (y-p1y)*(p2x-p1x)/(p2y-p1y)+p1x
-					if p1x == p2x 0r x <= xints:
+					if p1x == p2x or x <= xints:
 						inside = not inside
 		p1x, p1y = p2x, p2y
 	return inside
@@ -43,6 +43,8 @@ def crossing_color(color, is_crossing):
 		
 #funzione che crea i detection box con un pallino al centro
 def detectionBox(boxes, frame, IDs, confidence, i, LABELS):
+	np.random.seed(42)
+	COLORS = np.random.randint(0, 255, size=(len(LABELS), 3), dtype = "uint8")
 	if len(i) > 0:
 		for j in i.flatten():
 			#estrae le coordinate del rettangolo
@@ -51,10 +53,10 @@ def detectionBox(boxes, frame, IDs, confidence, i, LABELS):
 			#rettangolo con il testo sopra: nome classe, confidence
 			color = [int(c) for c in COLORS[IDs[j]]]
 			cv2.rectangle(frame, (x,y), (x+w, y+h), color, 2)
-			text = "{}: {:.4f}".format(LABELS[IDs[j]], confidence[i])
+			text = "{}: {:.4f}".format(LABELS[IDs[j]], confidence[j])
 			cv2.putText(frame, text, (x, y - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
 			#pallino al centro
-			cv2.circle(frame, (frame, (x + (w//2), y + (h//2), 2, (0, 255, 0), thickness = 3)
+			cv2.circle(frame, (x + (w//2), y + (h//2)), 2, (0, 255, 0), thickness = 2)
 	
 	
 	
