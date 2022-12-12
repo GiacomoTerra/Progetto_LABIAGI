@@ -1,6 +1,9 @@
+import os.path
+
 import cv2
-import os
 import numpy as np
+from scipy import *
+
 
 #controlla se un punto è all'interno di un poligono
 def ray_tracing_method(x, y, poly):
@@ -22,7 +25,7 @@ def ray_tracing_method(x, y, poly):
 #controlla se un punto di un oggetto sta per attraversare una linea
 def is_crossing_line(x, y, line, thresh):
 	thresh_down = 1 - thresh
-	thresh_up = 1 + thres
+	thresh_up = 1 + thresh
 	x1, y1 = line[0]
 	x2, y2 = line[1]
 	x3, y3 = x1, y1*thresh_down
@@ -30,8 +33,7 @@ def is_crossing_line(x, y, line, thresh):
 	x5, y5 = x2, y2*thresh_up
 	x6, y6 = x1, y1*thresh_up
 	polygon = [(x3, y3), (x4, y4), (x5, y5), (x6, y6)]
-	res = rey_tracing_method(x, y, polygon)
-	return res
+	return ray_tracing_method(x, y ,polygon)
 
 #la linea quando passata diventa rossa	
 def crossing_color(color, is_crossing):
@@ -58,7 +60,28 @@ def detectionBox(boxes, frame, IDs, confidence, i, LABELS):
 			#pallino al centro
 			cv2.circle(frame, (x + (w//2), y + (h//2)), 2, (0, 255, 0), thickness = 2)
 	
-	
-	
+#funzione che controlla se il rettangolo di identificazione è gia presente
+def BoxGiaPresente(box, detection_attuale, detection_precedente):
+	cX, cY, W, H = box
+	#distanza minima
+	min_dist = np.inf
+	frames = 10
+	for i in range(frames):
+		list_c = list(detection_precedente[i].keys())
+		#in caso non ci siano rilevamenti precedenti
+		if len(list_c) == 0:
+			continue
+		temp_dist, index = spatial.KDTree(list_c).query([(cX, cY)])
+		if min_dist > temp_dist:
+			min_dist = temp_dist
+			num_frame = i
+			coordinate = list_c[index[0]]
+	if min_dist > max(W, H) / 2:
+		return False
+	#mantengo l'ID
+	detection_attuale[(cX, cY)] = detection_precedente[num_frame][coordinate]
+	return True
+
+
 	
 			
