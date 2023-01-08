@@ -1,5 +1,6 @@
-import os.path
-
+#import packages
+import os
+import time
 import cv2
 import numpy as np
 from scipy import *
@@ -82,6 +83,20 @@ def BoxGiaPresente(box, detection_attuale, detection_precedente):
 	detection_attuale[(cX, cY)] = detection_precedente[num_frame][coordinate]
 	return True
 
+#funzione per pulire temp logs
+def clear_logs():
+	if os.path.exists(os.path.sep.join([args["inlog"], "In.txt"])):
+		os.remove(os.path.sep.join([args["inlog"], "In.txt"]))
+	if os.path.exists(os.path.sep.join([args["outlog"], "Out.txt"])):
+		os.remove(os.path.sep.join([args["outlog"], "Out.txt"]))
 
+#trova il centro di un rettangolo
+def find_center(x, y, w, h):
+	x1 = int(w/2)
+	y1 = int(h/2)
+	cx = x + x1
+	cy = y + y1
+	return cx, cy
+	
 	
 			
