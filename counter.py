@@ -59,6 +59,34 @@ while True:
 		cv2.line(image, (0, lineypos2), (WIDTH, lineypos2), (0, 255, 0), 5)
 		min_area = 300
 		max_area = 50000
+		#vettori per i centri dei contorni individuati
+		cxx = np.zeros(len(contours))
+		cyy = np.zeros(len(contours))
+		#ciclo su tutti i contorni presenti sul frame
+		for i in range(len(contours)):
+			#conto solamente i contorni principali
+			if hierarchy[0, i, 3] == -1:
+				area = cv2.contourArea(contours[i])
+				#area nell'intervallo prestabilito
+				if min_area < area < max_area:
+					# calculating centroids of contours
+                    cnt = contours[i]
+                    M = cv2.moments(cnt)
+                    cx = int(M['m10'] / M['m00'])
+                    cy = int(M['m01'] / M['m00'])
+                    if cy > lineypos:
+						#prendo le coordinate del rettangolo
+						x, y, w, h = cv2.boundingRect(cnt)
+						#creo il rettangolo
+						cv2.rectangle(image, (x,y), (x + w, y + h), (255, 0, 0), 2)
+						cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 1)
+                        cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1, line_type=cv2.LINE_AA)
+						#aggiungo i centri ai vettori 
+						cxx[i] = cx
+						cyy[i] = cy
+		#elimino le entries nulle
+		cxx = cxx[cxx != 0]
+		cyy = cxx[cyy != 0]
 		
 		
 		
