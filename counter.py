@@ -84,17 +84,101 @@ while True:
 						#aggiungo i centri ai vettori 
 						cxx[i] = cx
 						cyy[i] = cy
-		#elimino le entries nulle
+		#elimino le entries nulle centri che non sono stati aggiunti
 		cxx = cxx[cxx != 0]
 		cyy = cxx[cyy != 0]
+		#liste per controllare quali indici sono stati aggiunti al data frame
+		minx_index2 = []
+		miny_index2 = []
+		maxrad = 25
+		#almeno un'identificazione
+		if len(cxx) > 0:			
+			#nessun id presente
+			if not car_ids:
+				for i in range(len(cxx)):
+					car_ids.append(i)
+					#aggiunge una colonna al data frame relativa al id
+					df[str(carids[i])] = ""
+					#assegna il centro al frame e car id corrente
+					df.at[int(frame_num), str(car_ids[i])] = [cxx[i], cyy[i]]
+					total_cars = car_ids[i] + 1
+			else:
+				#array per calcolare i delta
+				dx = np.zeros((len(cxx), len(car_ids)))
+				dy = np.zeros((len(cyy), len(car_ids)))
+				for i in range(len(cxx)):
+					#ciclo tra gli id presenti
+					for j in range(len(car_ids)):
+						#prendo il centro dal frame precedente
+						old_cx_cy = df.iloc[int(frame_num - 1)][str(car_ids[j])]
+						#centro del frame attuale
+						current_cx_cy = np.array([cxx[i], cyy[i])
+						#in caso il vecchio centro sia empty
+						if not old_cx_cy:
+							#continua al prossimo id
+							continue
+						#calcolo la differenza
+						else:
+							dx[i, j] = old_cx_cy[0] - current_cx_cy[0]
+							dy[i, j] = old_cx_cy[0] - current_cx_cy[0]
+				for j in range(len(car_ids)):
+					#sommo i delta
+					somma = np.abs(dx[:, j]) + np.abs(dy[:, j])
+					#l'id che ha la minore differenza è quello vero
+					true_index = np.argmin(np.abs(somma))
+					minx_index = true_index
+					miny_index = true_index
+					#salvo i valori per controllare successivamente il raggio minimo
+					min_dx = dx[minx_index, j]
+					min_dy = dy[miny_index, j]
+					#controllo se il minimo ed i delta sono nulli(se il centro non si è mosso)
+					if min_dx == 0 and min_dy == 0 and np.all(dx[:, j] == 0) and np.all(dy[:, j] == 0):
+						#continua al prossimo id
+						continue
+					else:
+						#i delta sono minori del raggio max
+						if np.abs(min_dx) < maxrad and np.abs(min_dy) < maxrad:
+							#aggiunge il centro all'id già esistente
+							df.at[int(frame_num), str(car_ids[j])] = [cxx[minx_index], cyy[miny_index]]
+							#aggiungo gli indici
+							minx_index2.append(minx_index)
+							miny_index2.append(miny_index)
+				for i in range(len(cxx)):
+					#centro non presente nella lista
+					if i not in minx_index2 and miny_index2:
+						#nuova colonna con il totale
+						df[str(total_cars)] = ""
+						total_cars += 1
+						t = total_cars - 1
+						car_ids.append(t)
+						df.at[int(frame_num), str(t)] = [cxx[i], cyy[i]]
+					elif current_cx_cy[0] and not old_cx_cy and not minx_index2 and not miny_index2:
+						df[str(total_cars)] = ""
+						total_cars += 1
+						t = total_cars - 1
+						car_ids.append(t)
+						df.at[int(frame_num), str(t)] = [cxx[i], cyy[i]]
 		
-		
-		
-		
-		
-		
-		
-		
+		#macchine su schermo
+		current_cars = 0
+		#indice macchine a schermo
+		current_cars_index = []
+		for i in range(len(car_ids)):
+			#controllo il data frame per vedere quali ids sono attivi nel frame
+			if df.at[int(frame_num), str(car_ids[i])] != '':
+				#aggiunge una macchina al totale
+				current_cars += 1
+				#aggiunge l'indice
+				current_cars_index.append(i)
+		for i in range(current_cars):
+			#prende un centro di un id del frame corrente
+			current_center = df.iloc[int(frame_num)][str(car_ids[current_cars_index[i]])]
+			#stessa cosa frame precedente
+			old_center = df.iloc[int(frame_num - 1)][str(car_ids[current_cars_index[i]])]
+			#se esiste un centro
+			if current_center:
+				cv2.putText(image, "Centroid" + str(current_center[0]) + "," + str(current_center[1]), (int(current_center[0]), int(current_center[1])), cv2.FONT_HERSHEY_COOMPLEX, .5, (0, 255, 255), 2)
+				
 		
 		
 		
