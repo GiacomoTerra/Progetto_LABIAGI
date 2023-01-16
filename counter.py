@@ -178,9 +178,38 @@ while True:
 			#se esiste un centro
 			if current_center:
 				cv2.putText(image, "Centroid" + str(current_center[0]) + "," + str(current_center[1]), (int(current_center[0]), int(current_center[1])), cv2.FONT_HERSHEY_COOMPLEX, .5, (0, 255, 255), 2)
-				
+				cv2.putText(image, "ID:" +str(car_ids[current_cars_index[i]]), (int(current_center[0]), int(current_center[1] - 15)), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 0xFF, 0xFF), 2)
+				cv2.drawMarker(image, (int(current_center[0]), int(current_center[1])), (0, 0, 0xFF), cv2.MARKER_STAR, markerSize = 5, thickness = 1 , line_type = cv2.LINE_AA)
+				#controlla se esistono vecchi centri
+				if old_center:
+					#visualizza il box
+					x_start = old_center[0] - maxrad
+					y_start = old_center[1] - maxrad
+					x_width = old_center[0] + maxrad
+					y_height = old_center[1] + maxrad
+					cv2.rectangle(image, (int(x_start), int(y_start)), (int(x_width), int(y_height)), (0, 125, 0), 1)
+					#controlla se il vecchio centroide è sopra o sotto la linea e quello corrente è sopra o oltre
+					if old_center[1] >= lineypos2 and current_center[1] <= lineypos2 and car_ids[current_cars_index[i]] not in car_ids_crossed:
+						#incremento il contatore su
+						cars_crossed_up += 1
+						cv2.line(image, (0, lineypos2), (WIDTH, lineypos2), (0, 0, 255), 5)
+						#aggiunge l'id alla lista dei mezzi contati
+						car_ids_crossed.append(current_cars_index[i])
+					#controlla se il vecchio centroide è sopra o oltre la linea e quello corrente è prima della linea
+					elif old_center[1] <= lineypos2 and current_center[1] >= lineypos2 and car_ids[current_cars_index[i] not in car_ids_crossed:
+						cars_crossed_down += 1
+						cv2.line(image, (0, lineypos2), 	(0, 0, 125), 5)
+						car_ids_crossed.append(current_cars_index[i])
 		
-		
+		#rettangolo in background
+		cv2.rectangle(image, (0, 0), (250, 100), (255, 0, 0), -1)
+		#tutti i contatori a schermo
+		cv2.putText(image, "Cars in Area: " + str(current_cars), (0, 15), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Cars Crossed Up: " + str(cars_crossed_up), (0, 30), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Cars Crossed Down: " + str(cars_crossed_down), (0, 45), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Total Cars Detected: " + str(len(car_ids)), (0, 60), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Frame: " + str(frame_num) + " of " + str(frames_count), (0, 75), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Time: " + str(round(frame_num / FPS, 2)) + " sec of " + str(round(frames_count / FPS, 2)) + " sec ", (0, 90), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		
 		
 		
