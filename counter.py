@@ -211,6 +211,37 @@ while True:
 		cv2.putText(image, "Frame: " + str(frame_num) + " of " + str(frames_count), (0, 75), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		cv2.putText(image, "Time: " + str(round(frame_num / FPS, 2)) + " sec of " + str(round(frames_count / FPS, 2)) + " sec ", (0, 90), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		
+		#displays images e transformations
+		cv2.imshow("countours", image)
+		cv2.moveWindow("countours", 0, 0)
+		
+		cv2.imshow("fgmask", fgmask)
+		cv2.moveWindow("fgmask", int(WIDTH * ratio), 0)
+		
+		cv2.imshow("closing", closing)
+		cv2.moveWindow("closing", WIDTH, 0)
+		
+		cv2.imshow("opening", opening)
+		cv2.moveWindow("opening", 0, int(HEIGHT * ratio))
+		
+		cv2.imshow("dilation", dilation)
+		cv2.moveWindow("dilation", int(WIDTH * ratio), int(HEIGHT * ratio))
+		
+		cv2.imshow("binary", bins)
+		cv2.moveWindow("binary", WIDTH, int(HEIGHT * ratio))
+		
+		writer.write(image)
+		frame_num += 1
+		
+		if cv2.waitKey(1) & 0xFF == ord('q'):
+		break
+	else:
+		break()
+cap.release()
+cv2.destroyAllWindows()
+
+	
+		
 		
 		
 		
