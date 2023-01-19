@@ -4,8 +4,8 @@ import pandas as pd
 import cv2
 
 #catturo il video ed estraggo le informazioni
-cap = cv2.VideoCapture("traffic.mp4")
-frames_count, FPS, WIDTH, HEIGHT = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FRAME_FPS), cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+cap = cv2.VideoCapture("inputVideos/highway.mp4")
+frames_count, FPS, WIDTH, HEIGHT = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS), cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 WIDTH = int(WIDTH)
 HEIGHT = int(HEIGHT)
 print(frames_count, FPS, WIDTH, HEIGHT)
@@ -25,11 +25,11 @@ total_cars = 0
 fgbg = cv2.createBackgroundSubtractorMOG2()
 ret, frame = cap.read()
 ratio = .5
-image = cv2.resize(frame, (0, 0), None, ratio, ratio)
+image = cv2.resize(frame, (WIDTH, HEIGHT), None, ratio, ratio)
 width2, height2, channels = image.shape
 #inizializzo il writer
 fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-writer = cv2.VideoWriter("taffic_counter.avi", fourcc, FPS, (height2, width2), True)
+writer = cv2.VideoWriter("highway.avi", fourcc, FPS, (height2, width2), True)
 
 while True:
 	#import image
@@ -48,16 +48,16 @@ while True:
 		#rimuove le ombre
 		retvalbin, bins = cv2.threshold(dilation, 220, 255, cv2.THRESH_BINARY)
 		#crea i contorni
-		im2, contours, hierarchy = cv2.findContours(bins, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+		contours, hierarchy = cv2.findContours(bins, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 		#crea i poligoni attorno i contorni
 		hull = [cv2.convexHull(c) for c in contours]
 		#disegna i contorni
 		cv2.drawContours(image, hull, -1, (0, 255, 0), 3)
-		lineypos = 255
+		lineypos = 225
 		cv2.line(image, (0, lineypos), (WIDTH, lineypos), (255, 0, 0), 5)
 		lineypos2 = 250
 		cv2.line(image, (0, lineypos2), (WIDTH, lineypos2), (0, 255, 0), 5)
-		min_area = 300
+		min_area = 500
 		max_area = 50000
 		#vettori per i centri dei contorni individuati
 		cxx = np.zeros(len(contours))
@@ -70,35 +70,35 @@ while True:
 				#area nell'intervallo prestabilito
 				if min_area < area < max_area:
 					# calculating centroids of contours
-                    cnt = contours[i]
-                    M = cv2.moments(cnt)
-                    cx = int(M['m10'] / M['m00'])
-                    cy = int(M['m01'] / M['m00'])
-                    if cy > lineypos:
+					cnt = contours[i]
+					M = cv2.moments(cnt)
+					cx = int(M['m10'] / M['m00'])
+					cy = int(M['m01'] / M['m00'])
+					if cy > lineypos:
 						#prendo le coordinate del rettangolo
 						x, y, w, h = cv2.boundingRect(cnt)
 						#creo il rettangolo
 						cv2.rectangle(image, (x,y), (x + w, y + h), (255, 0, 0), 2)
 						cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 1)
-                        cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1, line_type=cv2.LINE_AA)
+						cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1, line_type=cv2.LINE_AA)
 						#aggiungo i centri ai vettori 
 						cxx[i] = cx
 						cyy[i] = cy
 		#elimino le entries nulle centri che non sono stati aggiunti
 		cxx = cxx[cxx != 0]
-		cyy = cxx[cyy != 0]
+		cyy = cyy[cyy != 0]
 		#liste per controllare quali indici sono stati aggiunti al data frame
 		minx_index2 = []
 		miny_index2 = []
 		maxrad = 25
 		#almeno un'identificazione
-		if len(cxx) > 0:			
+		if len(cxx):			
 			#nessun id presente
 			if not car_ids:
 				for i in range(len(cxx)):
 					car_ids.append(i)
 					#aggiunge una colonna al data frame relativa al id
-					df[str(carids[i])] = ""
+					df[str(car_ids[i])] = ""
 					#assegna il centro al frame e car id corrente
 					df.at[int(frame_num), str(car_ids[i])] = [cxx[i], cyy[i]]
 					total_cars = car_ids[i] + 1
@@ -112,7 +112,7 @@ while True:
 						#prendo il centro dal frame precedente
 						old_cx_cy = df.iloc[int(frame_num - 1)][str(car_ids[j])]
 						#centro del frame attuale
-						current_cx_cy = np.array([cxx[i], cyy[i])
+						current_cx_cy = np.array([cxx[i], cyy[i]])
 						#in caso il vecchio centro sia empty
 						if not old_cx_cy:
 							#continua al prossimo id
@@ -177,7 +177,7 @@ while True:
 			old_center = df.iloc[int(frame_num - 1)][str(car_ids[current_cars_index[i]])]
 			#se esiste un centro
 			if current_center:
-				cv2.putText(image, "Centroid" + str(current_center[0]) + "," + str(current_center[1]), (int(current_center[0]), int(current_center[1])), cv2.FONT_HERSHEY_COOMPLEX, .5, (0, 255, 255), 2)
+				cv2.putText(image, "Centroid" + str(current_center[0]) + "," + str(current_center[1]), (int(current_center[0]), int(current_center[1])), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 255, 255), 2)
 				cv2.putText(image, "ID:" +str(car_ids[current_cars_index[i]]), (int(current_center[0]), int(current_center[1] - 15)), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 0xFF, 0xFF), 2)
 				cv2.drawMarker(image, (int(current_center[0]), int(current_center[1])), (0, 0, 0xFF), cv2.MARKER_STAR, markerSize = 5, thickness = 1 , line_type = cv2.LINE_AA)
 				#controlla se esistono vecchi centri
@@ -191,15 +191,17 @@ while True:
 					#controlla se il vecchio centroide è sopra o sotto la linea e quello corrente è sopra o oltre
 					if old_center[1] >= lineypos2 and current_center[1] <= lineypos2 and car_ids[current_cars_index[i]] not in car_ids_crossed:
 						#incremento il contatore su
-						cars_crossed_up += 1
+						cars_crossed_up = cars_crossed_up + 1
 						cv2.line(image, (0, lineypos2), (WIDTH, lineypos2), (0, 0, 255), 5)
 						#aggiunge l'id alla lista dei mezzi contati
 						car_ids_crossed.append(current_cars_index[i])
 					#controlla se il vecchio centroide è sopra o oltre la linea e quello corrente è prima della linea
-					elif old_center[1] <= lineypos2 and current_center[1] >= lineypos2 and car_ids[current_cars_index[i] not in car_ids_crossed:
-						cars_crossed_down += 1
-						cv2.line(image, (0, lineypos2), 	(0, 0, 125), 5)
+					elif old_center[1] <= lineypos2 and current_center[1] >= lineypos2 and car_ids[current_cars_index[i]] not in car_ids_crossed:
+						cars_crossed_down = cars_crossed_down + 1
+						cv2.line(image, (0, lineypos2), (WIDTH, lineypos2),	(0, 0, 125), 5)
 						car_ids_crossed.append(current_cars_index[i])
+
+		
 		
 		#rettangolo in background
 		cv2.rectangle(image, (0, 0), (250, 100), (255, 0, 0), -1)
@@ -215,32 +217,20 @@ while True:
 		cv2.imshow("countours", image)
 		cv2.moveWindow("countours", 0, 0)
 		
-		cv2.imshow("fgmask", fgmask)
-		cv2.moveWindow("fgmask", int(WIDTH * ratio), 0)
 		
-		cv2.imshow("closing", closing)
-		cv2.moveWindow("closing", WIDTH, 0)
-		
-		cv2.imshow("opening", opening)
-		cv2.moveWindow("opening", 0, int(HEIGHT * ratio))
-		
-		cv2.imshow("dilation", dilation)
-		cv2.moveWindow("dilation", int(WIDTH * ratio), int(HEIGHT * ratio))
-		
-		cv2.imshow("binary", bins)
-		cv2.moveWindow("binary", WIDTH, int(HEIGHT * ratio))
 		
 		writer.write(image)
 		frame_num += 1
 		
 		if cv2.waitKey(1) & 0xFF == ord('q'):
-		break
+			break
 	else:
-		break()
+		break
 cap.release()
 cv2.destroyAllWindows()
-
-	
+				
+		
+		
 		
 		
 		
