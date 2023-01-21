@@ -3,33 +3,39 @@ import numpy as np
 import pandas as pd
 import cv2
 
-#catturo il video ed estraggo le informazioni
+#catturo il video ed estraggo le informazioni relative  e le stampo a schermo
 cap = cv2.VideoCapture("inputVideos/highway.mp4")
 frames_count, FPS, WIDTH, HEIGHT = cap.get(cv2.CAP_PROP_FRAME_COUNT), cap.get(cv2.CAP_PROP_FPS), cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 WIDTH = int(WIDTH)
 HEIGHT = int(HEIGHT)
 print(frames_count, FPS, WIDTH, HEIGHT)
 
-#creo un pandas DataFrame  con il numero di righe = frame_count
+#creo un pandas DataFrame  con il numero di righe = frame_count, nuove colonne vengono aggiunte ogni individuazione
 df = pd.DataFrame(index = range(int(frames_count)))
 df.index.name = "Frames"
 
+#contatore dei frame
 frame_num = 0
+#contatore veicoli direzione in sù
 cars_crossed_up = 0
+#contatore veicoli direzione in giù
 cars_crossed_down = 0
+#lista per gli ids dei veicoli
 car_ids = []
+#ids dei veicoli che hanno attraversato le linee
 car_ids_crossed = []
+#contatore identificazioni totali
 total_cars = 0
 
 #creo il background subtractor
 fgbg = cv2.createBackgroundSubtractorMOG2()
 ret, frame = cap.read()
 ratio = .5
-image = cv2.resize(frame, (WIDTH, HEIGHT), None, ratio, ratio)
+image = cv2.resize(frame, (0, 0), None, ratio, ratio)
 width2, height2, channels = image.shape
 #inizializzo il writer
-fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-writer = cv2.VideoWriter("highway.avi", fourcc, FPS, (height2, width2), True)
+fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
+writer = cv2.VideoWriter("outputVideos/highway.avi", fourcc, FPS, (height2, width2), 1)
 
 while True:
 	#import image
@@ -42,10 +48,11 @@ while True:
 		fgmask = fgbg.apply(gray)
 		#isola i mezzi dai disturbi per identificarli meglio
 		kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+		#trasformazioni morfologiche
 		closing = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
 		opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel)
 		dilation = cv2.dilate(opening, kernel)
-		#rimuove le ombre
+		#rimuove le ombre per isolare meglio i mezzi
 		retvalbin, bins = cv2.threshold(dilation, 220, 255, cv2.THRESH_BINARY)
 		#crea i contorni
 		contours, hierarchy = cv2.findContours(bins, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -53,23 +60,26 @@ while True:
 		hull = [cv2.convexHull(c) for c in contours]
 		#disegna i contorni
 		cv2.drawContours(image, hull, -1, (0, 255, 0), 3)
-		lineypos = 225
+		lineypos = 200
 		cv2.line(image, (0, lineypos), (WIDTH, lineypos), (255, 0, 0), 5)
 		lineypos2 = 250
 		cv2.line(image, (0, lineypos2), (WIDTH, lineypos2), (0, 255, 0), 5)
+		#area minima in caso vengano identificati piccoli disturbi
 		min_area = 500
+		#area massima
 		max_area = 50000
-		#vettori per i centri dei contorni individuati
+		#vettori di zeri per i centri dei contorni individuati a schermo
 		cxx = np.zeros(len(contours))
 		cyy = np.zeros(len(contours))
 		#ciclo su tutti i contorni presenti sul frame
 		for i in range(len(contours)):
-			#conto solamente i contorni principali
+			#conto solamente i contorni principali, non all'interno di altri
 			if hierarchy[0, i, 3] == -1:
+				#prendo l'area
 				area = cv2.contourArea(contours[i])
 				#area nell'intervallo prestabilito
 				if min_area < area < max_area:
-					# calculating centroids of contours
+					#calcolo i centroid dei contorni
 					cnt = contours[i]
 					M = cv2.moments(cnt)
 					cx = int(M['m10'] / M['m00'])
@@ -79,28 +89,30 @@ while True:
 						x, y, w, h = cv2.boundingRect(cnt)
 						#creo il rettangolo
 						cv2.rectangle(image, (x,y), (x + w, y + h), (255, 0, 0), 2)
-						cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX, 3, (0, 0, 255), 1)
+						cv2.putText(image, str(cx) + "," + str(cy), (cx + 10, cy + 10), cv2.FONT_HERSHEY_SIMPLEX, .3, (0, 0, 255), 1)
 						cv2.drawMarker(image, (cx, cy), (0, 0, 255), cv2.MARKER_STAR, markerSize=5, thickness=1, line_type=cv2.LINE_AA)
-						#aggiungo i centri ai vettori 
+						#aggiungo i centroid ai vettori lista dei centroids
 						cxx[i] = cx
 						cyy[i] = cy
-		#elimino le entries nulle centri che non sono stati aggiunti
+		#elimino le entries nulle, centri che non sono stati aggiunti
 		cxx = cxx[cxx != 0]
 		cyy = cyy[cyy != 0]
 		#liste per controllare quali indici sono stati aggiunti al data frame
 		minx_index2 = []
 		miny_index2 = []
-		maxrad = 25
+		maxrad = 35
 		#almeno un'identificazione
 		if len(cxx):			
 			#nessun id presente
 			if not car_ids:
 				for i in range(len(cxx)):
+					#aggiungo un id alla lista
 					car_ids.append(i)
 					#aggiunge una colonna al data frame relativa al id
 					df[str(car_ids[i])] = ""
 					#assegna il centro al frame e car id corrente
 					df.at[int(frame_num), str(car_ids[i])] = [cxx[i], cyy[i]]
+					#incremento il contatore totale
 					total_cars = car_ids[i] + 1
 			else:
 				#array per calcolare i delta
@@ -177,7 +189,7 @@ while True:
 			old_center = df.iloc[int(frame_num - 1)][str(car_ids[current_cars_index[i]])]
 			#se esiste un centro
 			if current_center:
-				cv2.putText(image, "Centroid" + str(current_center[0]) + "," + str(current_center[1]), (int(current_center[0]), int(current_center[1])), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 255, 255), 2)
+				cv2.putText(image, "Centro" + str(current_center[0]) + "," + str(current_center[1]), (int(current_center[0]), int(current_center[1])), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 255, 255), 2)
 				cv2.putText(image, "ID:" +str(car_ids[current_cars_index[i]]), (int(current_center[0]), int(current_center[1] - 15)), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 0xFF, 0xFF), 2)
 				cv2.drawMarker(image, (int(current_center[0]), int(current_center[1])), (0, 0, 0xFF), cv2.MARKER_STAR, markerSize = 5, thickness = 1 , line_type = cv2.LINE_AA)
 				#controlla se esistono vecchi centri
@@ -203,21 +215,34 @@ while True:
 
 		
 		
-		#rettangolo in background
+		#rettangolo in background che contiene i vari contatori
 		cv2.rectangle(image, (0, 0), (250, 100), (255, 0, 0), -1)
-		#tutti i contatori a schermo
-		cv2.putText(image, "Cars in Area: " + str(current_cars), (0, 15), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
-		cv2.putText(image, "Cars Crossed Up: " + str(cars_crossed_up), (0, 30), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
-		cv2.putText(image, "Cars Crossed Down: " + str(cars_crossed_down), (0, 45), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
-		cv2.putText(image, "Total Cars Detected: " + str(len(car_ids)), (0, 60), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		#tutti i contatori a schermo in alto a sinistra
+		cv2.putText(image, "Mezzi nell'Area: " + str(current_cars), (0, 15), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Mezzi in sù: " + str(cars_crossed_up), (0, 30), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Mezzi in giù: " + str(cars_crossed_down), (0, 45), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Veicoli identificati: " + str(len(car_ids)), (0, 60), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		cv2.putText(image, "Frame: " + str(frame_num) + " of " + str(frames_count), (0, 75), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		cv2.putText(image, "Time: " + str(round(frame_num / FPS, 2)) + " sec of " + str(round(frames_count / FPS, 2)) + " sec ", (0, 90), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		
 		#displays images e transformations
-		cv2.imshow("countours", image)
-		cv2.moveWindow("countours", 0, 0)
+		cv2.imshow("Frame", image)
+		cv2.moveWindow("Frame", 0, 0)
 		
-		
+		cv2.imshow("fgmask", fgmask)
+		cv2.moveWindow("fgmask", int(WIDTH * ratio), 0)
+
+		cv2.imshow("closing", closing)
+		cv2.moveWindow("closing", WIDTH, 0)
+
+		cv2.imshow("opening", opening)
+		cv2.moveWindow("opening", 0, int(HEIGHT * ratio))
+
+		cv2.imshow("dilation", dilation)
+		cv2.moveWindow("dilation", int(WIDTH * ratio), int(HEIGHT* ratio))
+
+		cv2.imshow("binary", bins)
+		cv2.moveWindow("binary", WIDTH, int(HEIGHT * ratio))	
 		
 		writer.write(image)
 		frame_num += 1
@@ -226,6 +251,12 @@ while True:
 			break
 	else:
 		break
+
+#salva il dataframe in un file csv
+df.to_csv("highway.csv", sep = ',')
+print("\n[INFO] cleaning up...")
+print("\n[INFO] Detection completed")
+writer.release()		
 cap.release()
 cv2.destroyAllWindows()
 				
