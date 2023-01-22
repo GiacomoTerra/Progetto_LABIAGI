@@ -36,4 +36,4 @@ Tutte le identificazioni vengono salvate su un Data Frame(Pandas):
 ogni riga è un frame differente mentre ad ogni nuovo id viene aggiunta una nuova colonna 
 ogni sezione avrà le coordinate (x,y) di quel car id nel determinato frame
 Il Data Frame viene salvato al termine in un file csv
-
+https://pandas.pydata.org/docs/reference/api/pandas.DataFrame.html
