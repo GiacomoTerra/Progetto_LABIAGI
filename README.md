@@ -14,5 +14,11 @@ Lo script prende in input un video(in questo contesto ho usato un .mp4) e restit
 * Una volta isolate le macchine vengono disegnati i contorni attorno ad esse il contorno ed il rettangolo
  https://docs.opencv.org/3.4/d7/d1d/tutorial_hull.html
  https://docs.opencv.org/3.4/da/d0c/tutorial_bounding_rects_circles.html
-* Ed infine vengono disegnate le 2 linee per il conteggio 
+* Ed infine vengono disegnate le 2 linee per il conteggio:
+  la linea per il conteggio è una, l'altra serve per determinare la direzione
+
+Tutte le identificazioni vengono salvate su un Data Frame(Pandas):
+ogni riga è un frame differente mentre ad ogni nuovo id viene aggiunta una nuova colonna 
+ogni sezione avrà le coordinate (x,y) di quel car id nel determinato frame
+Il Data Frame viene salvato al termine in un file csv
 
