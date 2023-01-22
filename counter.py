@@ -84,6 +84,7 @@ while True:
 					M = cv2.moments(cnt)
 					cx = int(M['m10'] / M['m00'])
 					cy = int(M['m01'] / M['m00'])
+					#prendo le coordinate cche hanno passato la prima linea
 					if cy > lineypos:
 						#prendo le coordinate del rettangolo
 						x, y, w, h = cv2.boundingRect(cnt)
@@ -100,6 +101,7 @@ while True:
 		#liste per controllare quali indici sono stati aggiunti al data frame
 		minx_index2 = []
 		miny_index2 = []
+		#massimo per stabilire se il centro è lo stesso del frame precedente
 		maxrad = 35
 		#almeno un'identificazione
 		if len(cxx):			
@@ -164,6 +166,7 @@ while True:
 						t = total_cars - 1
 						car_ids.append(t)
 						df.at[int(frame_num), str(t)] = [cxx[i], cyy[i]]
+					#esiste il centro corrente ma non quello vecchio
 					elif current_cx_cy[0] and not old_cx_cy and not minx_index2 and not miny_index2:
 						df[str(total_cars)] = ""
 						total_cars += 1
@@ -218,9 +221,9 @@ while True:
 		#rettangolo in background che contiene i vari contatori
 		cv2.rectangle(image, (0, 0), (250, 100), (255, 0, 0), -1)
 		#tutti i contatori a schermo in alto a sinistra
-		cv2.putText(image, "Mezzi nell'Area: " + str(current_cars), (0, 15), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
-		cv2.putText(image, "Mezzi in sù: " + str(cars_crossed_up), (0, 30), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
-		cv2.putText(image, "Mezzi in giù: " + str(cars_crossed_down), (0, 45), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Veicoli nell'Area: " + str(current_cars), (0, 15), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Veicoli UP: " + str(cars_crossed_up), (0, 30), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
+		cv2.putText(image, "Veicoli DOWN: " + str(cars_crossed_down), (0, 45), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		cv2.putText(image, "Veicoli identificati: " + str(len(car_ids)), (0, 60), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		cv2.putText(image, "Frame: " + str(frame_num) + " of " + str(frames_count), (0, 75), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
 		cv2.putText(image, "Time: " + str(round(frame_num / FPS, 2)) + " sec of " + str(round(frames_count / FPS, 2)) + " sec ", (0, 90), cv2.FONT_HERSHEY_COMPLEX, .5, (0, 170, 0), 1)
